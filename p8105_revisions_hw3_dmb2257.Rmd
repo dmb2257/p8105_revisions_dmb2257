@@ -87,17 +87,90 @@ instacart |>
 ```
 
 # Problem 2
+This imports the datasets. It cleans the second dataset to create a month variable instead of the detailed date. It also removed missing price data points. 
 ```{r}
-zipcodes_df = 
-  read_csv("p8105_revisions_hw3_dmb2257_files/Zip Codes.csv")|>
+zipcodes_tidy_df = 
+    read_csv("p8105_revisions_hw3_dmb2257_files/Zip Codes.csv", na = c("NA", ".", ""))|>
   janitor::clean_names()
 
 zori_df = 
   read_csv("p8105_revisions_hw3_dmb2257_files/Zip_zori_uc_sfrcondomfr_sm_month_NYC.csv")|>
-  janitor::clean_names()
+  pivot_longer(
+    -(RegionID:CountyName),
+    names_to = "dates",
+    values_to = "price"
+  )|>
+  janitor::clean_names()|>
+  rename(zip_code = region_name) |>
+  mutate(
+    dates = as_date(dates),
+    zip_code = as.numeric(zip_code)
+  )|>
+  drop_na(price)
+
+```
+
+
+This code chunk summarizes the number of months each zip code was observed. 
+```{r}
+zip_count=
+zori_df|>
+    mutate(
+    month = floor_date(dates, unit = "month")
+  )|>
+  select(-dates)|>
+  group_by(zip_code)|>
+  summarize(
+    zip_obs = n_distinct(month)
+  )
+
+zip_count|>
+  filter(zip_obs == 116)
+
+zip_count |>
+  filter(zip_obs < 10)
 
 
 ```
+There were 48 zip codes observed 116 times. There were 26 zip codes observed fewer than 10 times.
+
+```{r}
+average_price_df =
+zori_df|>
+  mutate(
+    year = floor_date(dates, unit = "year"))|>
+  rename(
+    borough = county_name)|>
+  separate(year, into=c("year", "month", "day"))|>
+  select(-month, -day, -dates)
+
+
+average_price_df|>
+  group_by(borough, year)|>
+  summarize(
+    avg_price = mean(price)
+  )|>
+  pivot_wider(
+    names_from = borough,
+    values_from = avg_price
+  )|>
+  knitr::kable()
+```
+Among all boroughs, the average rental price increases each year, with the exception of an decrease in average price in 2020 in Kings, NY County and Queens and in 2021 in Kings and Queens. These differences may be attributed to changes in rent the covid-19 pandemic.
+
+```{r}
+average_price_df|>
+  group_by(zip_code, borough, year)|>
+  summarize(price)|>
+  ggplot(aes(x= year, y = price, color = borough)) +
+  geom_point()
+
+```
+
+
+```{r}
+```
+
 
 
 # Problem 3

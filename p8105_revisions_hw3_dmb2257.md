@@ -140,4 +140,171 @@ instacart |>
 
 # Problem 2
 
+This imports the datasets. It cleans the second dataset to create a
+month variable instead of the detailed date. It also removed missing
+price data points.
+
+``` r
+zipcodes_tidy_df = 
+    read_csv("p8105_revisions_hw3_dmb2257_files/Zip Codes.csv", na = c("NA", ".", ""))|>
+  janitor::clean_names()
+```
+
+    ## Rows: 322 Columns: 7
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## chr (4): County, County Code, File Date, Neighborhood
+    ## dbl (3): State FIPS, County FIPS, ZipCode
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+``` r
+zori_df = 
+  read_csv("p8105_revisions_hw3_dmb2257_files/Zip_zori_uc_sfrcondomfr_sm_month_NYC.csv")|>
+  pivot_longer(
+    -(RegionID:CountyName),
+    names_to = "dates",
+    values_to = "price"
+  )|>
+  janitor::clean_names()|>
+  rename(zip_code = region_name) |>
+  mutate(
+    dates = as_date(dates),
+    zip_code = as.numeric(zip_code)
+  )|>
+  drop_na(price)
+```
+
+    ## Rows: 149 Columns: 125
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## chr   (6): RegionType, StateName, State, City, Metro, CountyName
+    ## dbl (119): RegionID, SizeRank, RegionName, 2015-01-31, 2015-02-28, 2015-03-3...
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+This code chunk summarizes the number of months each zip code was
+observed.
+
+``` r
+zip_count=
+zori_df|>
+    mutate(
+    month = floor_date(dates, unit = "month")
+  )|>
+  select(-dates)|>
+  group_by(zip_code)|>
+  summarize(
+    zip_obs = n_distinct(month)
+  )
+
+zip_count|>
+  filter(zip_obs == 116)
+```
+
+    ## # A tibble: 48 × 2
+    ##    zip_code zip_obs
+    ##       <dbl>   <int>
+    ##  1    10001     116
+    ##  2    10002     116
+    ##  3    10003     116
+    ##  4    10005     116
+    ##  5    10010     116
+    ##  6    10012     116
+    ##  7    10013     116
+    ##  8    10014     116
+    ##  9    10017     116
+    ## 10    10018     116
+    ## # ℹ 38 more rows
+
+``` r
+zip_count |>
+  filter(zip_obs < 10)
+```
+
+    ## # A tibble: 26 × 2
+    ##    zip_code zip_obs
+    ##       <dbl>   <int>
+    ##  1    10044       9
+    ##  2    10162       2
+    ##  3    10303       2
+    ##  4    10308       3
+    ##  5    10453       1
+    ##  6    10455       3
+    ##  7    10456       4
+    ##  8    10459       2
+    ##  9    10460       2
+    ## 10    10470       1
+    ## # ℹ 16 more rows
+
+There were 48 zip codes observed 116 times. There were 26 zip codes
+observed fewer than 10 times.
+
+``` r
+average_price_df =
+zori_df|>
+  mutate(
+    year = floor_date(dates, unit = "year"))|>
+  rename(
+    borough = county_name)|>
+  separate(year, into=c("year", "month", "day"))|>
+  select(-month, -day, -dates)
+
+
+average_price_df|>
+  group_by(borough, year)|>
+  summarize(
+    avg_price = mean(price)
+  )|>
+  pivot_wider(
+    names_from = borough,
+    values_from = avg_price
+  )|>
+  knitr::kable()
+```
+
+    ## `summarise()` has grouped output by 'borough'. You can override using the
+    ## `.groups` argument.
+
+| year | Bronx County | Kings County | New York County | Queens County | Richmond County |
+|:-----|-------------:|-------------:|----------------:|--------------:|----------------:|
+| 2015 |     1759.595 |     2492.928 |        3022.042 |      2214.707 |              NA |
+| 2016 |     1520.194 |     2520.357 |        3038.818 |      2271.955 |              NA |
+| 2017 |     1543.599 |     2545.828 |        3133.848 |      2263.303 |              NA |
+| 2018 |     1639.430 |     2547.291 |        3183.703 |      2291.918 |              NA |
+| 2019 |     1705.589 |     2630.504 |        3310.408 |      2387.816 |              NA |
+| 2020 |     1811.443 |     2555.051 |        3106.517 |      2315.632 |        1977.608 |
+| 2021 |     1857.777 |     2549.890 |        3136.632 |      2210.787 |        2045.430 |
+| 2022 |     2054.267 |     2868.199 |        3778.375 |      2406.038 |        2147.436 |
+| 2023 |     2285.459 |     3015.184 |        3932.610 |      2561.615 |        2332.934 |
+| 2024 |     2496.896 |     3126.803 |        4078.440 |      2694.022 |        2536.442 |
+
+Among all boroughs, the average rental price increases each year, with
+the exception of an decrease in average price in 2020 in Kings, NY
+County and Queens and in 2021 in Kings and Queens. These differences may
+be attributed to changes in rent the covid-19 pandemic.
+
+``` r
+average_price_df|>
+  group_by(zip_code, borough, year)|>
+  summarize(price)|>
+  ggplot(aes(x= year, y = price, color = borough)) +
+  geom_point()
+```
+
+    ## Warning: Returning more (or less) than 1 row per `summarise()` group was deprecated in
+    ## dplyr 1.1.0.
+    ## ℹ Please use `reframe()` instead.
+    ## ℹ When switching from `summarise()` to `reframe()`, remember that `reframe()`
+    ##   always returns an ungrouped data frame and adjust accordingly.
+    ## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
+    ## generated.
+
+    ## `summarise()` has grouped output by 'zip_code', 'borough', 'year'. You can
+    ## override using the `.groups` argument.
+
+![](p8105_revisions_hw3_dmb2257_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+
 # Problem 3
