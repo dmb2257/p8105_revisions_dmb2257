@@ -88,6 +88,14 @@ instacart |>
 
 # Problem 2
 ```{r}
+zipcodes_df = 
+  read_csv("p8105_revisions_hw3_dmb2257_files/Zip Codes.csv")|>
+  janitor::clean_names()
+
+zori_df = 
+  read_csv("p8105_revisions_hw3_dmb2257_files/Zip_zori_uc_sfrcondomfr_sm_month_NYC.csv")|>
+  janitor::clean_names()
+
 
 ```
 
