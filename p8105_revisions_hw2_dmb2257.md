@@ -3,7 +3,9 @@ p8105_revisions_hw2_dmb2257
 Diane Benites
 2025-11-30
 
-## Loading Necessary Packages and Sets Data Path
+# Homework 2 Revisions
+
+## Loads Necessary Packages
 
 ``` r
 library(tidyverse)
@@ -33,9 +35,6 @@ library(janitor)
 
 ``` r
 library(readxl)
-
-data_path <- 
-"C:/Users/dmben/OneDrive/Desktop/data_science_1/p8105_revisions_dmb2257"
 ```
 
 ## Problem 1
@@ -192,56 +191,126 @@ full month name.
 
 ## Problem 2
 
-This imports the mr. trashwheel data sheet and cleans the names to
-snakecase.
+This imports the Mr. trashwheel data sheet and cleans the names. It
+omits rows that do not include dumpster specific data, computes the
+appropriate value for homes_powered, and rounds the number of sports
+balls to the nearest integer. It also creates a new variable
+“trashwheel” with the value “mr” to identify this trashwheel when I
+combine the datasets.
 
 ``` r
 mr_trashwheel_df <-
   read_excel("./202409 Trash Wheel Collection Data.xlsx", range = "Mr. Trash Wheel!A2:N655")|>
   janitor::clean_names()|>
   drop_na(dumpster)|>
-  mutate(sports_balls = as.integer(sports_balls))
+  mutate(homes_powered = weight_tons*500/30,
+        sports_balls = round(sports_balls),
+        sports_balls = as.integer(sports_balls),
+         year = as.numeric(year),
+        trashwheel = "mr")
 ```
 
-This imports and cleans the names to snakecase in the Prof Trash Wheel
-data sheet.
+This imports and cleans the names in the Professor Trash Wheel data
+sheet.It omits rows that do not include dumpster specific data. It also
+creates a new variable “trashwheel” with the value “professor” to
+identify this trashwheel when I combine the datasets.
 
 ``` r
 prof_trashwheel_df <-
   read_excel("./202409 Trash Wheel Collection Data.xlsx", range = "Professor Trash Wheel!A2:M123")|>
   janitor::clean_names()|>
-  drop_na(dumpster)
+  drop_na(dumpster)|>
+  mutate(trashwheel = "professor")|>
+  mutate(weight_tons = as.numeric(weight_tons))
 ```
 
-This imports and cleans the names to snakecase in the Gwynnda data
-sheet.
+This imports and cleans the names in the Gwynnda Trash Wheeldata sheet.
+It omits rows that do not include dumpster specific data. It also
+creates a new variable “trashwheel” with the value “gwynnda” to identify
+this trashwheel when I combine the datasets.
 
 ``` r
 gwynnda_trashwheel_df <-
-  read_excel("./202409 Trash Wheel Collection Data.xlsx", range = "Gwynnda Trash Wheel!A2:L266")|>
+  read_excel("./202409 Trash Wheel Collection Data.xlsx", range ="Gwynnda Trash Wheel!A2:L266")|>
   janitor::clean_names()|>
-  drop_na(dumpster)
+  drop_na(dumpster)|>
+  mutate(trashwheel = "gwynnda")
 ```
 
-This combines the datasets
+This combines the datasets into one tidy dataframe.
 
 ``` r
 tidy_trashwheel_df = 
-  left_join(mr_trashwheel_df, prof_trashwheel_df, by = "dumpster")
-
-tidy_trashwheel_df2 =
-  left_join(tidy_trashwheel_df, gwynnda_trashwheel_df, by = "dumpster")
+  bind_rows(mr_trashwheel_df, prof_trashwheel_df, gwynnda_trashwheel_df)
 ```
+
+This code chunk computes the total weight of trash collected by each
+trash wheel by computing the sum of weight_tons. It also computes the
+sum of cigarette butts collected after filtering for June 2022.
+
+``` r
+tidy_trashwheel_df|>
+  group_by(trashwheel)|>
+  drop_na(weight_tons)|>
+  summarize(
+    total_trash = sum(weight_tons, na.rm = FALSE))
+```
+
+    ## # A tibble: 3 × 2
+    ##   trashwheel total_trash
+    ##   <chr>            <dbl>
+    ## 1 gwynnda           798.
+    ## 2 mr               2091.
+    ## 3 professor         247.
+
+``` r
+tidy_trashwheel_df|>
+  filter(month == "June")|>
+  filter(year == "2022")|>
+  group_by(trashwheel)|>
+  summarize(cigs = sum(cigarette_butts))
+```
+
+    ## # A tibble: 3 × 2
+    ##   trashwheel  cigs
+    ##   <chr>      <dbl>
+    ## 1 gwynnda    18120
+    ## 2 mr         22500
+    ## 3 professor  11600
+
+The resulting dataset contains 1033 observations of 15 variables. Key
+variables include the trash wheel variable, which identifies the
+trashwheel. Another key variable is the date the trash was collected and
+the weight in tons of the trash collected. The homes powered variable
+was computed using the weight in tons variable. The weight of trash
+collected was multiplied by 500 kilowatts of electricitydivided by 30
+kilowatts of electricity used per home, to determine the number of homes
+powered based on the weight of trash collected by the dumpster.The total
+weight of trash collected by Professor Trash Wheel was 247 tons. In June
+2022, 18120 total cigarette butts were collected by Gwynnda Trash Wheel.
 
 ## Problem 3
 
 This imports and cleans the names to snakecase in the zip codes and zori
-data sets
+data sets. It creates the variable “borough” for both of the data sets.
+It renames the county names to a consistent format under the borough
+variable.The zori dataset is cleaned to condense the dates and rental
+prices into two columns, and drop missing rental prices.
 
 ``` r
 zipcodes_tidy_df = 
     read_csv(file = "./Zip Codes.csv")|>
-  janitor::clean_names()
+  janitor::clean_names()|>
+  mutate(borough = county)|>
+  mutate(
+    borough = 
+      case_match(
+        borough,
+        "Kings" ~"Brooklyn",
+        "Bronx" ~ "Bronx",
+        "New York" ~ "Manhattan",
+        "Queens" ~ "Queens",
+        "Richmond" ~ "Staten Island"))
 ```
 
     ## Rows: 322 Columns: 7
@@ -256,7 +325,23 @@ zipcodes_tidy_df =
 ``` r
 zori_df = 
   read_csv(file =  "./Zip_zori_uc_sfrcondomfr_sm_month_NYC.csv")|>
-  janitor::clean_names()
+  janitor::clean_names()|>
+  select(-state_name)|>
+  pivot_longer(
+    x2015_01_31:x2024_08_31,
+    names_to = "date",
+    values_to = "rent_price")|>
+  drop_na(rent_price)|>
+    mutate(borough = county_name)|>
+    mutate(
+    borough = 
+      case_match(
+        borough,
+        "Kings County" ~"Brooklyn",
+        "Bronx County" ~ "Bronx",
+        "New York County" ~ "Manhattan",
+        "Queens County" ~ "Queens",
+        "Richmond County" ~ "Staten Island"))
 ```
 
     ## Rows: 149 Columns: 125
@@ -267,3 +352,19 @@ zori_df =
     ## 
     ## ℹ Use `spec()` to retrieve the full column specification for this data.
     ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+This code chunk creates a single datset with all the information
+contained in these files.
+
+``` r
+tidy_ny_df =
+  left_join(zori_df, zipcodes_tidy_df)
+```
+
+    ## Joining with `by = join_by(borough)`
+
+    ## Warning in left_join(zori_df, zipcodes_tidy_df): Detected an unexpected many-to-many relationship between `x` and `y`.
+    ## ℹ Row 1 of `x` matches multiple rows in `y`.
+    ## ℹ Row 228 of `y` matches multiple rows in `x`.
+    ## ℹ If a many-to-many relationship is expected, set `relationship =
+    ##   "many-to-many"` to silence this warning.
