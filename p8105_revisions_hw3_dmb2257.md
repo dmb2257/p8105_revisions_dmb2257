@@ -145,8 +145,12 @@ month variable instead of the detailed date. It also removed missing
 price data points.
 
 ``` r
+data_path <- 
+"C:/Users/dmben/OneDrive/Desktop/data_science_1/p8105_revisions_dmb2257"
+
+
 zipcodes_tidy_df = 
-    read_csv("p8105_revisions_hw3_dmb2257_files/Zip Codes.csv", na = c("NA", ".", ""))|>
+    read_csv(file.path(data_path, "Zip Codes.csv"))|>
   janitor::clean_names()
 ```
 
@@ -161,7 +165,7 @@ zipcodes_tidy_df =
 
 ``` r
 zori_df = 
-  read_csv("p8105_revisions_hw3_dmb2257_files/Zip_zori_uc_sfrcondomfr_sm_month_NYC.csv")|>
+  read_csv(file.path(data_path, "Zip_zori_uc_sfrcondomfr_sm_month_NYC.csv"))|>
   pivot_longer(
     -(RegionID:CountyName),
     names_to = "dates",
@@ -250,7 +254,7 @@ zori_df|>
   rename(
     borough = county_name)|>
   separate(year, into=c("year", "month", "day"))|>
-  select(-month, -day, -dates)
+  select(-day, -dates)
 
 
 average_price_df|>
@@ -289,22 +293,192 @@ be attributed to changes in rent the covid-19 pandemic.
 ``` r
 average_price_df|>
   group_by(zip_code, borough, year)|>
-  summarize(price)|>
-  ggplot(aes(x= year, y = price, color = borough)) +
+  summarize(average_price = mean(price))|>
+  ggplot(aes(x= year, y = average_price, color = borough)) +
   geom_point()
 ```
 
-    ## Warning: Returning more (or less) than 1 row per `summarise()` group was deprecated in
-    ## dplyr 1.1.0.
-    ## ℹ Please use `reframe()` instead.
-    ## ℹ When switching from `summarise()` to `reframe()`, remember that `reframe()`
-    ##   always returns an ungrouped data frame and adjust accordingly.
-    ## Call `lifecycle::last_lifecycle_warnings()` to see where this warning was
-    ## generated.
-
-    ## `summarise()` has grouped output by 'zip_code', 'borough', 'year'. You can
-    ## override using the `.groups` argument.
+    ## `summarise()` has grouped output by 'zip_code', 'borough'. You can override
+    ## using the `.groups` argument.
 
 ![](p8105_revisions_hw3_dmb2257_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
+``` r
+zori_df|>
+  mutate(
+    year = floor_date(dates, unit = "month"))|>
+  rename(
+    borough = county_name)|>
+  separate(year, into=c("year", "month", "day"))|>
+  select(-day, -dates)|>
+  filter(year == "2023")|>
+  group_by(zip_code, borough, month)|>
+  summarize(average_price = mean(price))|>
+  ggplot(aes(x= month, y = average_price, color = borough)) +
+  geom_point()+
+  labs(title = "Average Rental Prices in Each Zip Codes by Months in 2023")
+```
+
+    ## `summarise()` has grouped output by 'zip_code', 'borough'. You can override
+    ## using the `.groups` argument.
+
+![](p8105_revisions_hw3_dmb2257_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
 # Problem 3
+
+The loads the accelerometer dataset and mutates the seqn variable to be
+a character, as it is in the covar df. This code chunk also loads the
+demographic dataset. It omits the rows without values and sets the
+appropriate labels for the sex and education variables. It then joins
+both datasets and filters the merged dataframe to omit participants
+younger than 21 years old and with missing demographic information.
+
+``` r
+accel_df = 
+  read_csv(file = "./nhanes_accel (1).csv")|>
+  janitor::clean_names()|>
+  drop_na()|>
+  mutate(seqn = as.character(seqn))
+```
+
+    ## Rows: 250 Columns: 1441
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## dbl (1441): SEQN, min1, min2, min3, min4, min5, min6, min7, min8, min9, min1...
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+``` r
+covar_df = 
+  read_csv(file = "./nhanes_covar.csv", col_names = c("SEQN", "sex", "age", "bmi", "education"))|>
+  drop_na(SEQN)|>
+  filter(!(SEQN == "SEQN"))|>
+  janitor::clean_names()|>
+  mutate(
+    sex =
+      case_match(
+        sex,
+        "1" ~ "male",
+        "2" ~ "female"),
+    education =
+      case_match(
+        education,
+        "1" ~ "less than high school",
+        "2" ~ "high school equivalent",
+        "3" ~ "more than high school"),
+    education = as.ordered(education)
+    )
+```
+
+    ## Rows: 255 Columns: 5
+    ## ── Column specification ────────────────────────────────────────────────────────
+    ## Delimiter: ","
+    ## chr (5): SEQN, sex, age, bmi, education
+    ## 
+    ## ℹ Use `spec()` to retrieve the full column specification for this data.
+    ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
+
+``` r
+merged_df = 
+  left_join(accel_df, covar_df, by = "seqn")|>
+  filter(age>=21)|>
+  drop_na(sex, age, bmi, education)
+```
+
+This code chunk produces a reader friendly table of men and women in
+each education category. This also plots the age distributions for men
+and women in each age category. The greatest frequency of men and women
+occur in the more than high school education level. There is lowest
+frequency of females are in the high school education level, compared to
+less than high school and more than high school. The lowest frequency of
+males are in the less than high school level, compared to high school
+equivalent and more than high school.
+
+``` r
+age_sex_df =
+merged_df|>
+  group_by(sex, education)|>
+  summarize(n = n())
+```
+
+    ## `summarise()` has grouped output by 'sex'. You can override using the `.groups`
+    ## argument.
+
+``` r
+age_sex_df|>
+  knitr::kable()
+```
+
+| sex    | education              |   n |
+|:-------|:-----------------------|----:|
+| female | high school equivalent |  23 |
+| female | less than high school  |  28 |
+| female | more than high school  |  59 |
+| male   | high school equivalent |  35 |
+| male   | less than high school  |  27 |
+| male   | more than high school  |  56 |
+
+``` r
+age_sex_df|>
+  ggplot(aes(x = sex, y = n, fill = education))+
+  geom_col(position = "dodge")
+```
+
+![](p8105_revisions_hw3_dmb2257_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+
+This aggregates the minutes for each participant. This then plots the
+total activities against age, with pink for females and blue for males,
+and 3 separate panels for education. There is also a trend line to
+illustrate differences.
+
+``` r
+aggregate_df=
+merged_df|>
+  pivot_longer(
+    min1:min1440,
+    names_to = "minutes",
+    values_to = "activity"
+  )|>
+group_by(seqn)|>
+  summarize(total_activity = sum(activity))
+
+plot_df = 
+  left_join(merged_df, aggregate_df, by = "seqn")
+
+
+plot_df|>  
+  select(seqn, age, sex, education, total_activity)|>
+  ggplot(aes(x = age, y = total_activity))+
+  geom_point(aes(color = sex))+
+  geom_smooth(method = lm, se = FALSE)+
+  facet_grid(~education)
+```
+
+    ## `geom_smooth()` using formula = 'y ~ x'
+
+![](p8105_revisions_hw3_dmb2257_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+
+This code chunk plots accelerometer data by the 24 hour activity time
+courses for each education level, and uses color to indicate sex.
+
+``` r
+accel_plot_df = 
+  merged_df|>
+  pivot_longer(
+    min1:min1440,
+    names_to = "minutes",
+    values_to = "activity"
+  )
+
+accel_plot_df|>
+  ggplot(aes(x =minutes, y = activity))+
+  geom_line(aes(color = sex))+
+  geom_smooth(method = lm, se = FALSE)+
+  facet_grid(~education)+
+  theme(axis.text.x = element_text(angle = 90, hjust =1))
+```
+
+    ## `geom_smooth()` using formula = 'y ~ x'
+
+![](p8105_revisions_hw3_dmb2257_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
