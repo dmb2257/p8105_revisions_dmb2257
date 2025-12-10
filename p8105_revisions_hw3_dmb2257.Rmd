@@ -317,7 +317,7 @@ accel_plot_df =
 accel_plot_df|>
   group_by(seqn)|>
   mutate(minutes = as.numeric(minutes))|>
-  ggplot(aes(x =minutes, y = activity, alpha = 0.5))+
+  ggplot(aes(x =minutes, y = activity))+
   geom_line(aes(color = sex))+
   geom_smooth(se = FALSE)+
   facet_grid(~education)+
