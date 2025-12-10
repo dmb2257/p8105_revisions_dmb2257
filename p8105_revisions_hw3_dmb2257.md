@@ -5,9 +5,9 @@ Diane Benites
 
 # Problem 1
 
-This loads necessary packages and the dataset.
-
 ``` r
+#This loads necessary packages and the dataset. 
+
 library(p8105.datasets)
 library(tidyverse)
 ```
@@ -51,11 +51,8 @@ There are 134 aisles. The most items are ordered from aisle 83: fresh
 vegetables (150609 items ordered), aisle 24: fresh fruits (150473 items
 ordered), and aisle 123: packaged vegatables (78493 items ordered).
 
-This makes a plot of the number of items ordered. The aisles are sorted
-by the number of items ordered. The names of the aisles are included on
-the x axis.
-
 ``` r
+# This makes a plot of the number of items ordered. The aisles are sorted by the number of items ordered. The names of the aisles are included on the x axis. 
 items_ordered_df|>
   filter(item_order_count >= 10000)|>
   ggplot(
@@ -70,11 +67,9 @@ items_ordered_df|>
 
 ![](p8105_revisions_hw3_dmb2257_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
 
-This creates a table of the 3 most popular items in the aisles “baking
-ingredients”, “dog food care”, “packaged vegetables fruits”, and how
-many of each item was ordered.
-
 ``` r
+#This creates a table of the 3 most popular items in the aisles "baking ingredients", "dog food care", "packaged vegetables fruits", and how many of each item was ordered.
+
 instacart|>
   filter(aisle %in% c("baking ingredients", "dog food care", "packaged vegetables fruits"))|>
   group_by(aisle, product_name)|>
@@ -101,10 +96,9 @@ instacart|>
 | dog food care | Organix Chicken & Brown Rice Recipe | 28 |
 | dog food care | Small Dog Biscuits | 26 |
 
-This makes a table showing the mean hour of the day at which pank lady
-apples and coffee ice cream were ordered.
-
 ``` r
+#This makes a table showing the mean hour of the day at which pank lady apples and coffee ice cream were ordered.
+
 instacart |>
   mutate(
     order_dow = 
@@ -140,11 +134,9 @@ instacart |>
 
 # Problem 2
 
-This imports the datasets. It cleans the second dataset to create a
-month variable instead of the detailed date. It also removed missing
-price data points.
-
 ``` r
+#This imports the datasets. It cleans the second dataset to format the date and zip code variables. It also removed missing price data points. 
+
 data_path <- 
 "C:/Users/dmben/OneDrive/Desktop/data_science_1/p8105_revisions_dmb2257"
 
@@ -189,10 +181,8 @@ zori_df =
     ## ℹ Use `spec()` to retrieve the full column specification for this data.
     ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
 
-This code chunk summarizes the number of months each zip code was
-observed.
-
 ``` r
+# This code chunk summarizes the number of months each zip code was observed. 
 zip_count=
 zori_df|>
     mutate(
@@ -256,6 +246,7 @@ zori_df|>
   separate(year, into=c("year", "month", "day"))|>
   select(-day, -dates)
 
+#This creates a table of average rental price each year by borough
 
 average_price_df|>
   group_by(borough, year)|>
@@ -295,13 +286,23 @@ average_price_df|>
   group_by(zip_code, borough, year)|>
   summarize(average_price = mean(price))|>
   ggplot(aes(x= year, y = average_price, color = borough)) +
-  geom_point()
+  geom_point()+
+  labs(title = "Average Rental Prices Within Zip Codes by Year",
+       x = "Year",
+       y = "Average Price")+
+    theme(axis.text.x = element_text(angle = 70, hjust =1))
 ```
 
     ## `summarise()` has grouped output by 'zip_code', 'borough'. You can override
     ## using the `.groups` argument.
 
 ![](p8105_revisions_hw3_dmb2257_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+
+``` r
+ggsave("problem2_plot1.jpg", plot = last_plot(), path = "results_hw2")
+```
+
+    ## Saving 7 x 5 in image
 
 ``` r
 zori_df|>
@@ -316,7 +317,9 @@ zori_df|>
   summarize(average_price = mean(price))|>
   ggplot(aes(x= month, y = average_price, color = borough)) +
   geom_point()+
-  labs(title = "Average Rental Prices in Each Zip Codes by Months in 2023")
+  labs(title = "Average Rental Price Within Zip Codes by Months in 2023",
+       x = "Month",
+       y = "Average Price")
 ```
 
     ## `summarise()` has grouped output by 'zip_code', 'borough'. You can override
@@ -324,16 +327,16 @@ zori_df|>
 
 ![](p8105_revisions_hw3_dmb2257_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
+``` r
+ggsave("problem2_plot2.jpg", plot = last_plot(), path = "results_hw2")
+```
+
+    ## Saving 7 x 5 in image
+
 # Problem 3
 
-The loads the accelerometer dataset and mutates the seqn variable to be
-a character, as it is in the covar df. This code chunk also loads the
-demographic dataset. It omits the rows without values and sets the
-appropriate labels for the sex and education variables. It then joins
-both datasets and filters the merged dataframe to omit participants
-younger than 21 years old and with missing demographic information.
-
 ``` r
+#The loads the accelerometer dataset and mutates the seqn variable to be a character.
 accel_df = 
   read_csv(file = "./nhanes_accel (1).csv")|>
   janitor::clean_names()|>
@@ -350,6 +353,8 @@ accel_df =
     ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
 
 ``` r
+# This loads the demographic dataset. It omits the rows without values and sets the appropriate labels for the sex and education variables. 
+
 covar_df = 
   read_csv(file = "./nhanes_covar.csv", col_names = c("SEQN", "sex", "age", "bmi", "education"))|>
   drop_na(SEQN)|>
@@ -380,59 +385,62 @@ covar_df =
     ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
 
 ``` r
+# This then joins both datasets and filters the merged dataframe to omit participants younger than 21 years old and with missing demographic information. 
 merged_df = 
   left_join(accel_df, covar_df, by = "seqn")|>
   filter(age>=21)|>
   drop_na(sex, age, bmi, education)
 ```
 
-This code chunk produces a reader friendly table of men and women in
-each education category. This also plots the age distributions for men
-and women in each age category. The greatest frequency of men and women
-occur in the more than high school education level. There is lowest
-frequency of females are in the high school education level, compared to
-less than high school and more than high school. The lowest frequency of
-males are in the less than high school level, compared to high school
-equivalent and more than high school.
-
 ``` r
-age_sex_df =
+#This produces a reader friendly table of men and women in each education category. 
 merged_df|>
   group_by(sex, education)|>
-  summarize(n = n())
+  summarize(n = n())|>
+  pivot_wider(names_from = sex, values_from = n)|>
+  knitr::kable()
 ```
 
     ## `summarise()` has grouped output by 'sex'. You can override using the `.groups`
     ## argument.
 
-``` r
-age_sex_df|>
-  knitr::kable()
-```
-
-| sex    | education              |   n |
-|:-------|:-----------------------|----:|
-| female | high school equivalent |  23 |
-| female | less than high school  |  28 |
-| female | more than high school  |  59 |
-| male   | high school equivalent |  35 |
-| male   | less than high school  |  27 |
-| male   | more than high school  |  56 |
+| education              | female | male |
+|:-----------------------|-------:|-----:|
+| high school equivalent |     23 |   35 |
+| less than high school  |     28 |   27 |
+| more than high school  |     59 |   56 |
 
 ``` r
-age_sex_df|>
-  ggplot(aes(x = sex, y = n, fill = education))+
-  geom_col(position = "dodge")
+#This plots the age distributions for men and women in each education category. 
+sex_age=
+merged_df|>
+select(seqn, sex, age, education)|>
+mutate(age = as.numeric(age))
+
+sex_age|>
+  group_by(seqn)|>
+  ggplot()+
+  geom_boxplot(aes(sex, age, fill = education))
 ```
 
 ![](p8105_revisions_hw3_dmb2257_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
-This aggregates the minutes for each participant. This then plots the
-total activities against age, with pink for females and blue for males,
-and 3 separate panels for education. There is also a trend line to
-illustrate differences.
+The greatest number of men and women occur in the more than high school
+education level. There is a greater frequency of females in this
+category compared to men. The lowest frequency of females are in the
+high school equivalent category. The lowest frequency of males are in
+the less than high school category.
+
+The greatest median age of females occurs for those with a high school
+equivalent education level. The greatest median age of males occurs for
+those with less than high school education level. The median age of
+females with a high school equivalent is greater than the median age of
+males with a high school equivalent. However for more than high school
+education, the median age for males is greater than the median age of
+females.
 
 ``` r
+# This aggregates the minutes for each participant.
 aggregate_df=
 merged_df|>
   pivot_longer(
@@ -443,24 +451,28 @@ merged_df|>
 group_by(seqn)|>
   summarize(total_activity = sum(activity))
 
+# This then plots the total activities against age, with pink for females and blue for males, and 3 separate panels for education. There is also a trend line to illustrate differences. 
 plot_df = 
-  left_join(merged_df, aggregate_df, by = "seqn")
-
+  left_join(merged_df, aggregate_df, by = "seqn")|>
+  select(seqn, age, sex, education, total_activity)|>
+  mutate(age = as.numeric(age))
 
 plot_df|>  
-  select(seqn, age, sex, education, total_activity)|>
-  ggplot(aes(x = age, y = total_activity))+
-  geom_point(aes(color = sex))+
-  geom_smooth(method = lm, se = FALSE)+
+  ggplot(aes(x = age, y = total_activity, color = sex))+
+  geom_point()+
+  geom_smooth(se = FALSE)+
   facet_grid(~education)
 ```
 
-    ## `geom_smooth()` using formula = 'y ~ x'
+    ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
 
 ![](p8105_revisions_hw3_dmb2257_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
-
-This code chunk plots accelerometer data by the 24 hour activity time
-courses for each education level, and uses color to indicate sex.
+The steepest smooth curve occurs among those with less than high school
+education. Based on the smooth curve, the total activity generally
+decreases as age increases among males and females with less than high
+school education. Based on the smooth curves for high school equivalent
+and more than high school, females have greater total activity than
+males.
 
 ``` r
 accel_plot_df = 
@@ -469,16 +481,29 @@ accel_plot_df =
     min1:min1440,
     names_to = "minutes",
     values_to = "activity"
-  )
+  )|>
+  mutate(minutes = str_remove(minutes, "min"))
+
+#This code chunk plots accelerometer data by the 24 hour activity time courses for each education level, and uses color to indicate sex.
 
 accel_plot_df|>
-  ggplot(aes(x =minutes, y = activity))+
+  group_by(seqn)|>
+  mutate(minutes = as.numeric(minutes))|>
+  ggplot(aes(x =minutes, y = activity, alpha = 0.5))+
   geom_line(aes(color = sex))+
-  geom_smooth(method = lm, se = FALSE)+
+  geom_smooth(se = FALSE)+
   facet_grid(~education)+
-  theme(axis.text.x = element_text(angle = 90, hjust =1))
+  theme(axis.text.x = element_text(angle = 60, hjust =1))
 ```
 
-    ## `geom_smooth()` using formula = 'y ~ x'
+    ## `geom_smooth()` using method = 'gam' and formula = 'y ~ s(x, bs = "cs")'
 
 ![](p8105_revisions_hw3_dmb2257_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+Based on this graph, the greatest activity occurs for females among
+those with more than high school between minutes 1000 and 1500 of the
+day. The greatest activity for males occurs among those with more than
+high school between minutes 250 and 750 during the day. Also, the peak
+activity occurs among those with more than a high school education. The
+trend line shows similar patterns in activity throughout the day for all
+education levels, the lowest activity occurs during the beginning and
+end minutes of the day.

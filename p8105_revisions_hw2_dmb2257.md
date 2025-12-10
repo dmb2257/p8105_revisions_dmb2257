@@ -39,10 +39,9 @@ library(readxl)
 
 ## Problem 1
 
-This code chunk loads the unemployment dataframe and cleans the names.
-It selects the needed columns and mutates the months to the full name.
-
 ``` r
+#This code chunk loads the unemployment dataframe  and cleans the names. It selects the needed columns and mutates the months to the full name. 
+
 unemployment_df = 
   read_csv(file = "./unemployment.csv")|>
   janitor::clean_names() |>
@@ -81,13 +80,8 @@ unemployment_df =
     ## ℹ Use `spec()` to retrieve the full column specification for this data.
     ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
 
-This code chunk imports the polsmonth data. It separates the date into
-year, month and date and renames the numeric value of the month to the
-full month name. It also selects all variables except for day, prez_gop
-and prez_dem. It also filters the data to only include the points that
-were yes fo dem or gop.
-
 ``` r
+#This code chunk imports the polsmonth data. It separates the date into year, month and date and renames the numeric value of the month to the full month name. It also selects all variables except for day, prez_gop and prez_dem. It also filters the data to only include the points that were yes fo dem or gop.
 polsmonth_df = 
   read_csv(file = "./pols-month.csv")|>
 
@@ -136,10 +130,9 @@ polsmonth_df =
     ## ℹ Use `spec()` to retrieve the full column specification for this data.
     ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
 
-The loads the dataset snp and separates the sate into month, day and
-year. It mutates the numeric month to the full month name.
-
 ``` r
+#The loads the dataset snp and separates the sate into month, day and year. It mutates the numeric month to the full month name.
+
 snp_df = 
   read_csv(file = "./snp.csv")|>
 janitor::clean_names() |>
@@ -191,14 +184,9 @@ full month name.
 
 ## Problem 2
 
-This imports the Mr. trashwheel data sheet and cleans the names. It
-omits rows that do not include dumpster specific data, computes the
-appropriate value for homes_powered, and rounds the number of sports
-balls to the nearest integer. It also creates a new variable
-“trashwheel” with the value “mr” to identify this trashwheel when I
-combine the datasets.
-
 ``` r
+# This imports the Mr. trashwheel data sheet and cleans the names. It omits rows that do not include dumpster specific data, computes the appropriate value for homes_powered, and rounds the number of sports balls to the nearest integer. It also creates a new variable "trashwheel" with the value "mr" to identify this trashwheel when I combine the datasets.
+
 mr_trashwheel_df <-
   read_excel("./202409 Trash Wheel Collection Data.xlsx", range = "Mr. Trash Wheel!A2:N655")|>
   janitor::clean_names()|>
@@ -210,12 +198,8 @@ mr_trashwheel_df <-
         trashwheel = "mr")
 ```
 
-This imports and cleans the names in the Professor Trash Wheel data
-sheet.It omits rows that do not include dumpster specific data. It also
-creates a new variable “trashwheel” with the value “professor” to
-identify this trashwheel when I combine the datasets.
-
 ``` r
+# This imports and cleans the names in the Professor Trash Wheel data sheet.It omits rows that do not include dumpster specific data. It also creates a new variable "trashwheel" with the value "professor" to identify this trashwheel when I combine the datasets.
 prof_trashwheel_df <-
   read_excel("./202409 Trash Wheel Collection Data.xlsx", range = "Professor Trash Wheel!A2:M123")|>
   janitor::clean_names()|>
@@ -224,12 +208,8 @@ prof_trashwheel_df <-
   mutate(weight_tons = as.numeric(weight_tons))
 ```
 
-This imports and cleans the names in the Gwynnda Trash Wheeldata sheet.
-It omits rows that do not include dumpster specific data. It also
-creates a new variable “trashwheel” with the value “gwynnda” to identify
-this trashwheel when I combine the datasets.
-
 ``` r
+# This imports and cleans the names in the Gwynnda Trash Wheeldata sheet. It omits rows that do not include dumpster specific data. It also creates a new variable "trashwheel" with the value "gwynnda" to identify this trashwheel when I combine the datasets.
 gwynnda_trashwheel_df <-
   read_excel("./202409 Trash Wheel Collection Data.xlsx", range ="Gwynnda Trash Wheel!A2:L266")|>
   janitor::clean_names()|>
@@ -237,18 +217,14 @@ gwynnda_trashwheel_df <-
   mutate(trashwheel = "gwynnda")
 ```
 
-This combines the datasets into one tidy dataframe.
-
 ``` r
+# This combines the datasets into one tidy dataframe. 
 tidy_trashwheel_df = 
   bind_rows(mr_trashwheel_df, prof_trashwheel_df, gwynnda_trashwheel_df)
 ```
 
-This code chunk computes the total weight of trash collected by each
-trash wheel by computing the sum of weight_tons. It also computes the
-sum of cigarette butts collected after filtering for June 2022.
-
 ``` r
+# This code chunk computes the total weight of trash collected by each trash wheel by computing the sum of weight_tons. It also computes the sum of cigarette butts collected after filtering for June 2022. 
 tidy_trashwheel_df|>
   group_by(trashwheel)|>
   drop_na(weight_tons)|>
@@ -283,7 +259,7 @@ variables include the trash wheel variable, which identifies the
 trashwheel. Another key variable is the date the trash was collected and
 the weight in tons of the trash collected. The homes powered variable
 was computed using the weight in tons variable. The weight of trash
-collected was multiplied by 500 kilowatts of electricitydivided by 30
+collected was multiplied by 500 kilowatts of electricity divided by 30
 kilowatts of electricity used per home, to determine the number of homes
 powered based on the weight of trash collected by the dumpster.The total
 weight of trash collected by Professor Trash Wheel was 247 tons. In June
@@ -291,13 +267,9 @@ weight of trash collected by Professor Trash Wheel was 247 tons. In June
 
 ## Problem 3
 
-This imports and cleans the names to snakecase in the zip codes and zori
-data sets. It creates the variable “borough” for both of the data sets.
-It renames the county names to a consistent format under the borough
-variable.The zori dataset is cleaned to condense the dates and rental
-prices into two columns, and drop missing rental prices.
-
 ``` r
+#This imports and cleans the names to snakecase in the zip codes and zori data sets. It creates the variable "borough" for both of the data sets. It renames the county names to a consistent format under the borough variable.The zori dataset is cleaned to condense the dates and rental prices into two columns, and drop missing rental prices.
+
 zipcodes_tidy_df = 
     read_csv(file = "./Zip Codes.csv")|>
   janitor::clean_names()|>
@@ -341,7 +313,9 @@ zori_df =
         "Bronx County" ~ "Bronx",
         "New York County" ~ "Manhattan",
         "Queens County" ~ "Queens",
-        "Richmond County" ~ "Staten Island"))
+        "Richmond County" ~ "Staten Island"))|>
+  rename("zip_code" = region_name)|>
+  mutate(date = str_remove(date, "x"))
 ```
 
     ## Rows: 149 Columns: 125
@@ -353,18 +327,80 @@ zori_df =
     ## ℹ Use `spec()` to retrieve the full column specification for this data.
     ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
 
-This code chunk creates a single datset with all the information
-contained in these files.
-
 ``` r
+#This code chunk creates a single datset with all the information contained in these files. 
 tidy_ny_df =
-  left_join(zori_df, zipcodes_tidy_df)
+  left_join(zori_df, zipcodes_tidy_df)|>
+  arrange(zip_code, rent_price)|>
+  select(-county)
 ```
 
-    ## Joining with `by = join_by(borough)`
+    ## Joining with `by = join_by(zip_code, borough)`
 
-    ## Warning in left_join(zori_df, zipcodes_tidy_df): Detected an unexpected many-to-many relationship between `x` and `y`.
-    ## ℹ Row 1 of `x` matches multiple rows in `y`.
-    ## ℹ Row 228 of `y` matches multiple rows in `x`.
-    ## ℹ If a many-to-many relationship is expected, set `relationship =
-    ##   "many-to-many"` to silence this warning.
+``` r
+tidy_ny_df|>
+  summarize(n_zip = n_distinct(zip_code),
+            n_neighborhood = n_distinct(neighborhood))
+```
+
+    ## # A tibble: 1 × 2
+    ##   n_zip n_neighborhood
+    ##   <int>          <int>
+    ## 1   149             43
+
+``` r
+zipcodes_tidy_df|>
+    summarize(n_zip = n_distinct(zip_code),
+            n_neighborhood = n_distinct(neighborhood))
+```
+
+    ## # A tibble: 1 × 2
+    ##   n_zip n_neighborhood
+    ##   <int>          <int>
+    ## 1   320             43
+
+A tidy dataset was created by merging the zori and zipcode data sets by
+zip code. The dataset is arranged by ascending zip code and price. There
+are 10450 observations of 18 variables. There are 149 unique zip codes
+included in the dataset.There are 43 unique neighborhoods. There are 171
+zip codes that appear in the ZIP code dataset but not in the zillow
+rental price dataset.
+
+``` r
+dates_df = 
+tidy_ny_df|>
+  filter(str_starts(date, "2020_01|2021_01"))|>
+  pivot_wider(
+    names_from = date,
+    values_from = rent_price
+  )|>
+  rename(jan_2020 = "2020_01_31")|>
+  rename(jan_2021 = "2021_01_31")|>
+  mutate(rent_drop = jan_2020-jan_2021)|>
+  arrange(desc(rent_drop))|>
+  select(zip_code, jan_2020, jan_2021, rent_drop, borough, neighborhood)
+
+table_data=
+  head(dates_df, 10)
+
+table_data|>
+  knitr::kable()
+```
+
+| zip_code | jan_2020 | jan_2021 | rent_drop | borough   | neighborhood                  |
+|---------:|---------:|---------:|----------:|:----------|:------------------------------|
+|    10007 | 6334.211 | 5421.614 |  912.5966 | Manhattan | Lower Manhattan               |
+|    10069 | 4623.042 | 3874.918 |  748.1245 | Manhattan | NA                            |
+|    10009 | 3406.442 | 2692.187 |  714.2550 | Manhattan | Lower East Side               |
+|    10016 | 3731.135 | 3019.431 |  711.7045 | Manhattan | Gramercy Park and Murray Hill |
+|    10001 | 4108.098 | 3397.648 |  710.4499 | Manhattan | Chelsea and Clinton           |
+|    10002 | 3645.416 | 2935.113 |  710.3028 | Manhattan | Lower East Side               |
+|    10004 | 3149.658 | 2443.697 |  705.9608 | Manhattan | Lower Manhattan               |
+|    10038 | 3573.201 | 2875.616 |  697.5853 | Manhattan | Lower Manhattan               |
+|    10012 | 3628.566 | 2942.344 |  686.2218 | Manhattan | Greenwich Village and Soho    |
+|    10010 | 3697.284 | 3012.353 |  684.9304 | Manhattan | Gramercy Park and Murray Hill |
+
+The 10 largest drops in price from January 2020 to January 2021 were all
+observed in zip codes from the borough, Manhattan. The greatest price
+drop was \$912.59 in the zip code 10007. Of the 10 zip codes with the
+largest price drop, Lower Manhattan was the most common neighborhood.
