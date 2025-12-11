@@ -221,7 +221,7 @@ ggp_plot2
 ```{r}
 ggp_combined = ggp_plot1 + ggp_plot2
 
-ggsave("problem2_combined_plot.jpg", plot = ggp_combined, path = "results_hw2", height = 10, width = 30)
+ggsave("problem2_combined_plot.jpg", plot = ggp_combined, path = "results_hw3_problem2", height = 10, width = 30)
 ```
 
 # Problem 3
