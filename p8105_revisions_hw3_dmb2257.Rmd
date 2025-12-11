@@ -236,20 +236,30 @@ covar_df =
         "1" ~ "less than high school",
         "2" ~ "high school equivalent",
         "3" ~ "more than high school"),
-    education = as.ordered(education)
+    education = fct_relevel(education, "less than high school", "high school equivalent", "more than high school")
     )
 
 # This then joins both datasets and filters the merged dataframe to omit participants younger than 21 years old and with missing demographic information. 
 merged_df = 
   left_join(accel_df, covar_df, by = "seqn")|>
   filter(age>=21)|>
-  drop_na(sex, age, bmi, education)
+  drop_na(sex, age, bmi, education)|>
+  pivot_longer(
+    min1:min1440,
+    names_to = "minutes",
+    values_to = "activity"
+  )|>
+  mutate(minutes = str_remove(minutes, "min"))
 ```
 
 
 ```{r}
 #This produces a reader friendly table of men and women in each education category. 
 merged_df|>
+  pivot_wider(
+    names_from = minutes,
+    values_from = activity
+  )|>
   group_by(sex, education)|>
   summarize(n = n())|>
   pivot_wider(names_from = sex, values_from = n)|>
@@ -264,7 +274,12 @@ mutate(age = as.numeric(age))
 sex_age|>
   group_by(seqn)|>
   ggplot()+
-  geom_boxplot(aes(sex, age, fill = education))
+  geom_boxplot(aes(sex, age, fill = education))+
+  labs(
+    title = "Age Distribution by Sex and Education",
+    x = "Sex",
+    y = "Age (years)"
+  )
 
 ```
 
@@ -275,53 +290,39 @@ The greatest median age of females occurs for those with a high school equivalen
 
 
 ```{r}
-# This aggregates the minutes for each participant.
-aggregate_df=
-merged_df|>
-  pivot_longer(
-    min1:min1440,
-    names_to = "minutes",
-    values_to = "activity"
-  )|>
-group_by(seqn)|>
-  summarize(total_activity = sum(activity))
-
 # This then plots the total activities against age, with pink for females and blue for males, and 3 separate panels for education. There is also a trend line to illustrate differences. 
-plot_df = 
-  left_join(merged_df, aggregate_df, by = "seqn")|>
-  select(seqn, age, sex, education, total_activity)|>
-  mutate(age = as.numeric(age))
 
-plot_df|>  
+merged_df|>
+  mutate(age = as.numeric(age))|>  
+  group_by(seqn, age, education, sex)|>
+  summarize(total_activity = sum(activity))|>
   ggplot(aes(x = age, y = total_activity, color = sex))+
   geom_point()+
   geom_smooth(se = FALSE)+
-  facet_grid(~education)
+  facet_grid(~education)+
+  labs(
+    title = "Total Activity by Age and Education",
+    x = "Age (years)",
+    y = "Total Activity"
+  )
 
 ```
 The steepest smooth curve occurs among those with less than high school education. Based on the smooth curve, the total activity generally decreases as age increases among males and females with less than high school education. Based on the smooth curves for high school equivalent and more than high school, females have greater total activity than males. 
 
 
 ```{r}
-accel_plot_df = 
-  merged_df|>
-  pivot_longer(
-    min1:min1440,
-    names_to = "minutes",
-    values_to = "activity"
-  )|>
-  mutate(minutes = str_remove(minutes, "min"))
-
 #This code chunk plots accelerometer data by the 24 hour activity time courses for each education level, and uses color to indicate sex.
 
-accel_plot_df|>
+merged_df|>
   group_by(seqn)|>
   mutate(minutes = as.numeric(minutes))|>
-  ggplot(aes(x =minutes, y = activity))+
+  ggplot(aes(x =minutes, y = activity, group = seqn))+
   geom_line(aes(color = sex))+
-  geom_smooth(se = FALSE)+
+  geom_smooth(aes(group = sex), se = FALSE)+
   facet_grid(~education)+
   theme(axis.text.x = element_text(angle = 60, hjust =1))
+
+
 
 ```
 Based on this graph, the greatest activity occurs for females among those with more than high school between minutes 1000 and 1500 of the day. The greatest activity for males occurs among those with more than high school between minutes 250 and 750 during the day. Also, the peak activity occurs among those with more than a high school education. The trend line shows similar patterns in activity throughout the day for all education levels, the lowest activity occurs during the beginning and end minutes of the day. 

@@ -372,7 +372,7 @@ covar_df =
         "1" ~ "less than high school",
         "2" ~ "high school equivalent",
         "3" ~ "more than high school"),
-    education = as.ordered(education)
+    education = fct_relevel(education, "less than high school", "high school equivalent", "more than high school")
     )
 ```
 
@@ -389,12 +389,22 @@ covar_df =
 merged_df = 
   left_join(accel_df, covar_df, by = "seqn")|>
   filter(age>=21)|>
-  drop_na(sex, age, bmi, education)
+  drop_na(sex, age, bmi, education)|>
+  pivot_longer(
+    min1:min1440,
+    names_to = "minutes",
+    values_to = "activity"
+  )|>
+  mutate(minutes = str_remove(minutes, "min"))
 ```
 
 ``` r
 #This produces a reader friendly table of men and women in each education category. 
 merged_df|>
+  pivot_wider(
+    names_from = minutes,
+    values_from = activity
+  )|>
   group_by(sex, education)|>
   summarize(n = n())|>
   pivot_wider(names_from = sex, values_from = n)|>
@@ -406,8 +416,8 @@ merged_df|>
 
 | education              | female | male |
 |:-----------------------|-------:|-----:|
-| high school equivalent |     23 |   35 |
 | less than high school  |     28 |   27 |
+| high school equivalent |     23 |   35 |
 | more than high school  |     59 |   56 |
 
 ``` r
@@ -420,7 +430,12 @@ mutate(age = as.numeric(age))
 sex_age|>
   group_by(seqn)|>
   ggplot()+
-  geom_boxplot(aes(sex, age, fill = education))
+  geom_boxplot(aes(sex, age, fill = education))+
+  labs(
+    title = "Age Distribution by Sex and Education",
+    x = "Sex",
+    y = "Age (years)"
+  )
 ```
 
 ![](p8105_revisions_hw3_dmb2257_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
@@ -440,30 +455,25 @@ education, the median age for males is greater than the median age of
 females.
 
 ``` r
-# This aggregates the minutes for each participant.
-aggregate_df=
-merged_df|>
-  pivot_longer(
-    min1:min1440,
-    names_to = "minutes",
-    values_to = "activity"
-  )|>
-group_by(seqn)|>
-  summarize(total_activity = sum(activity))
-
 # This then plots the total activities against age, with pink for females and blue for males, and 3 separate panels for education. There is also a trend line to illustrate differences. 
-plot_df = 
-  left_join(merged_df, aggregate_df, by = "seqn")|>
-  select(seqn, age, sex, education, total_activity)|>
-  mutate(age = as.numeric(age))
 
-plot_df|>  
+merged_df|>
+  mutate(age = as.numeric(age))|>  
+  group_by(seqn, age, education, sex)|>
+  summarize(total_activity = sum(activity))|>
   ggplot(aes(x = age, y = total_activity, color = sex))+
   geom_point()+
   geom_smooth(se = FALSE)+
-  facet_grid(~education)
+  facet_grid(~education)+
+  labs(
+    title = "Total Activity by Age and Education",
+    x = "Age (years)",
+    y = "Total Activity"
+  )
 ```
 
+    ## `summarise()` has grouped output by 'seqn', 'age', 'education'. You can
+    ## override using the `.groups` argument.
     ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
 
 ![](p8105_revisions_hw3_dmb2257_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
@@ -475,23 +485,14 @@ and more than high school, females have greater total activity than
 males.
 
 ``` r
-accel_plot_df = 
-  merged_df|>
-  pivot_longer(
-    min1:min1440,
-    names_to = "minutes",
-    values_to = "activity"
-  )|>
-  mutate(minutes = str_remove(minutes, "min"))
-
 #This code chunk plots accelerometer data by the 24 hour activity time courses for each education level, and uses color to indicate sex.
 
-accel_plot_df|>
+merged_df|>
   group_by(seqn)|>
   mutate(minutes = as.numeric(minutes))|>
-  ggplot(aes(x =minutes, y = activity))+
+  ggplot(aes(x =minutes, y = activity, group = seqn))+
   geom_line(aes(color = sex))+
-  geom_smooth(se = FALSE)+
+  geom_smooth(aes(group = sex), se = FALSE)+
   facet_grid(~education)+
   theme(axis.text.x = element_text(angle = 60, hjust =1))
 ```
