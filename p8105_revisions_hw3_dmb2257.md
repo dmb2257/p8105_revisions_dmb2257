@@ -25,6 +25,7 @@ library(tidyverse)
 
 ``` r
 data("instacart")
+library(patchwork)
 ```
 
 Description of the Instacart Dataset: There are 1384617 observations of
@@ -169,7 +170,18 @@ zori_df =
     dates = as_date(dates),
     zip_code = as.numeric(zip_code)
   )|>
-  drop_na(price)
+  drop_na(price)|>
+  rename(
+    borough = county_name)|>
+  mutate(
+   borough = 
+      case_match(
+        borough,
+        "Kings County" ~"Brooklyn",
+        "Bronx County" ~ "Bronx",
+        "New York County" ~ "Manhattan",
+        "Queens County" ~ "Queens",
+        "Richmond County" ~ "Staten Island"))
 ```
 
     ## Rows: 149 Columns: 125
@@ -241,8 +253,6 @@ average_price_df =
 zori_df|>
   mutate(
     year = floor_date(dates, unit = "year"))|>
-  rename(
-    borough = county_name)|>
   separate(year, into=c("year", "month", "day"))|>
   select(-day, -dates)
 
@@ -263,30 +273,32 @@ average_price_df|>
     ## `summarise()` has grouped output by 'borough'. You can override using the
     ## `.groups` argument.
 
-| year | Bronx County | Kings County | New York County | Queens County | Richmond County |
-|:-----|-------------:|-------------:|----------------:|--------------:|----------------:|
-| 2015 |     1759.595 |     2492.928 |        3022.042 |      2214.707 |              NA |
-| 2016 |     1520.194 |     2520.357 |        3038.818 |      2271.955 |              NA |
-| 2017 |     1543.599 |     2545.828 |        3133.848 |      2263.303 |              NA |
-| 2018 |     1639.430 |     2547.291 |        3183.703 |      2291.918 |              NA |
-| 2019 |     1705.589 |     2630.504 |        3310.408 |      2387.816 |              NA |
-| 2020 |     1811.443 |     2555.051 |        3106.517 |      2315.632 |        1977.608 |
-| 2021 |     1857.777 |     2549.890 |        3136.632 |      2210.787 |        2045.430 |
-| 2022 |     2054.267 |     2868.199 |        3778.375 |      2406.038 |        2147.436 |
-| 2023 |     2285.459 |     3015.184 |        3932.610 |      2561.615 |        2332.934 |
-| 2024 |     2496.896 |     3126.803 |        4078.440 |      2694.022 |        2536.442 |
+| year |    Bronx | Brooklyn | Manhattan |   Queens | Staten Island |
+|:-----|---------:|---------:|----------:|---------:|--------------:|
+| 2015 | 1759.595 | 2492.928 |  3022.042 | 2214.707 |            NA |
+| 2016 | 1520.194 | 2520.357 |  3038.818 | 2271.955 |            NA |
+| 2017 | 1543.599 | 2545.828 |  3133.848 | 2263.303 |            NA |
+| 2018 | 1639.430 | 2547.291 |  3183.703 | 2291.918 |            NA |
+| 2019 | 1705.589 | 2630.504 |  3310.408 | 2387.816 |            NA |
+| 2020 | 1811.443 | 2555.051 |  3106.517 | 2315.632 |      1977.608 |
+| 2021 | 1857.777 | 2549.890 |  3136.632 | 2210.787 |      2045.430 |
+| 2022 | 2054.267 | 2868.199 |  3778.375 | 2406.038 |      2147.436 |
+| 2023 | 2285.459 | 3015.184 |  3932.610 | 2561.615 |      2332.934 |
+| 2024 | 2496.896 | 3126.803 |  4078.440 | 2694.022 |      2536.442 |
 
 Among all boroughs, the average rental price increases each year, with
-the exception of an decrease in average price in 2020 in Kings, NY
-County and Queens and in 2021 in Kings and Queens. These differences may
-be attributed to changes in rent the covid-19 pandemic.
+the exception of an decrease in average price in 2020 in Brooklyn,
+Manhattan and Queens and in 2021 in Brooklyn and Queens. These
+differences may be attributed to changes in rent the covid-19 pandemic.
 
 ``` r
+ggp_plot1=
 average_price_df|>
   group_by(zip_code, borough, year)|>
   summarize(average_price = mean(price))|>
-  ggplot(aes(x= year, y = average_price, color = borough)) +
+  ggplot(aes(x= year, y = average_price, group = zip_code, color = borough)) +
   geom_point()+
+  geom_line()+
   labs(title = "Average Rental Prices Within Zip Codes by Year",
        x = "Year",
        y = "Average Price")+
@@ -296,27 +308,25 @@ average_price_df|>
     ## `summarise()` has grouped output by 'zip_code', 'borough'. You can override
     ## using the `.groups` argument.
 
+``` r
+ggp_plot1
+```
+
 ![](p8105_revisions_hw3_dmb2257_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 ``` r
-ggsave("problem2_plot1.jpg", plot = last_plot(), path = "results_hw2")
-```
-
-    ## Saving 7 x 5 in image
-
-``` r
+ggp_plot2 =
 zori_df|>
   mutate(
     year = floor_date(dates, unit = "month"))|>
-  rename(
-    borough = county_name)|>
   separate(year, into=c("year", "month", "day"))|>
   select(-day, -dates)|>
   filter(year == "2023")|>
   group_by(zip_code, borough, month)|>
   summarize(average_price = mean(price))|>
-  ggplot(aes(x= month, y = average_price, color = borough)) +
+  ggplot(aes(x= month, y = average_price, group = zip_code, color = borough)) +
   geom_point()+
+  geom_line()+
   labs(title = "Average Rental Price Within Zip Codes by Months in 2023",
        x = "Month",
        y = "Average Price")
@@ -325,13 +335,17 @@ zori_df|>
     ## `summarise()` has grouped output by 'zip_code', 'borough'. You can override
     ## using the `.groups` argument.
 
+``` r
+ggp_plot2
+```
+
 ![](p8105_revisions_hw3_dmb2257_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
 ``` r
-ggsave("problem2_plot2.jpg", plot = last_plot(), path = "results_hw2")
-```
+ggp_combined = ggp_plot1 + ggp_plot2
 
-    ## Saving 7 x 5 in image
+ggsave("problem2_combined_plot.jpg", plot = ggp_combined, path = "results_hw2", height = 10, width = 30)
+```
 
 # Problem 3
 
@@ -438,7 +452,7 @@ sex_age|>
   )
 ```
 
-![](p8105_revisions_hw3_dmb2257_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](p8105_revisions_hw3_dmb2257_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
 The greatest number of men and women occur in the more than high school
 education level. There is a greater frequency of females in this
@@ -476,7 +490,7 @@ merged_df|>
     ## override using the `.groups` argument.
     ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
 
-![](p8105_revisions_hw3_dmb2257_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+![](p8105_revisions_hw3_dmb2257_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 The steepest smooth curve occurs among those with less than high school
 education. Based on the smooth curve, the total activity generally
 decreases as age increases among males and females with less than high
@@ -499,7 +513,7 @@ merged_df|>
 
     ## `geom_smooth()` using method = 'gam' and formula = 'y ~ s(x, bs = "cs")'
 
-![](p8105_revisions_hw3_dmb2257_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+![](p8105_revisions_hw3_dmb2257_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 Based on this graph, the greatest activity occurs for females among
 those with more than high school between minutes 1000 and 1500 of the
 day. The greatest activity for males occurs among those with more than

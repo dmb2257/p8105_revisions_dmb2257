@@ -17,6 +17,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(p8105.datasets)
 library(tidyverse)
 data("instacart")
+library(patchwork)
 ```
 Description of the Instacart Dataset: There are 1384617 observations of 15 variables. Each column represents one of the variables in the dataset. Each row represents one product of an order. This data provides information on when instacart orders in the sample were placed, which products were ordered, the frequency of orders, and the aisles associated with the orders. 
 
@@ -119,8 +120,18 @@ zori_df =
     dates = as_date(dates),
     zip_code = as.numeric(zip_code)
   )|>
-  drop_na(price)
-
+  drop_na(price)|>
+  rename(
+    borough = county_name)|>
+  mutate(
+   borough = 
+      case_match(
+        borough,
+        "Kings County" ~"Brooklyn",
+        "Bronx County" ~ "Bronx",
+        "New York County" ~ "Manhattan",
+        "Queens County" ~ "Queens",
+        "Richmond County" ~ "Staten Island"))
 ```
 
 
@@ -151,8 +162,6 @@ average_price_df =
 zori_df|>
   mutate(
     year = floor_date(dates, unit = "year"))|>
-  rename(
-    borough = county_name)|>
   separate(year, into=c("year", "month", "day"))|>
   select(-day, -dates)
 
@@ -169,43 +178,51 @@ average_price_df|>
   )|>
   knitr::kable()
 ```
-Among all boroughs, the average rental price increases each year, with the exception of an decrease in average price in 2020 in Kings, NY County and Queens and in 2021 in Kings and Queens. These differences may be attributed to changes in rent the covid-19 pandemic.
+Among all boroughs, the average rental price increases each year, with the exception of an decrease in average price in 2020 in Brooklyn, Manhattan and Queens and in 2021 in Brooklyn and Queens. These differences may be attributed to changes in rent the covid-19 pandemic.
 
 ```{r}
+ggp_plot1=
 average_price_df|>
   group_by(zip_code, borough, year)|>
   summarize(average_price = mean(price))|>
-  ggplot(aes(x= year, y = average_price, color = borough)) +
+  ggplot(aes(x= year, y = average_price, group = zip_code, color = borough)) +
   geom_point()+
+  geom_line()+
   labs(title = "Average Rental Prices Within Zip Codes by Year",
        x = "Year",
        y = "Average Price")+
     theme(axis.text.x = element_text(angle = 70, hjust =1))
 
-ggsave("problem2_plot1.jpg", plot = last_plot(), path = "results_hw2")
+ggp_plot1
 ```
 
 
 ```{r}
+ggp_plot2 =
 zori_df|>
   mutate(
     year = floor_date(dates, unit = "month"))|>
-  rename(
-    borough = county_name)|>
   separate(year, into=c("year", "month", "day"))|>
   select(-day, -dates)|>
   filter(year == "2023")|>
   group_by(zip_code, borough, month)|>
   summarize(average_price = mean(price))|>
-  ggplot(aes(x= month, y = average_price, color = borough)) +
+  ggplot(aes(x= month, y = average_price, group = zip_code, color = borough)) +
   geom_point()+
+  geom_line()+
   labs(title = "Average Rental Price Within Zip Codes by Months in 2023",
        x = "Month",
        y = "Average Price")
 
-ggsave("problem2_plot2.jpg", plot = last_plot(), path = "results_hw2")
+ggp_plot2
+
 ```
 
+```{r}
+ggp_combined = ggp_plot1 + ggp_plot2
+
+ggsave("problem2_combined_plot.jpg", plot = ggp_combined, path = "results_hw2", height = 10, width = 30)
+```
 
 # Problem 3
 
