@@ -273,7 +273,7 @@ weight of trash collected by Professor Trash Wheel was 247 tons. In June
 zipcodes_tidy_df = 
     read_csv(file = "./Zip Codes.csv")|>
   janitor::clean_names()|>
-  mutate(borough = county)|>
+  rename(borough = county)|>
   mutate(
     borough = 
       case_match(
@@ -304,7 +304,7 @@ zori_df =
     names_to = "date",
     values_to = "rent_price")|>
   drop_na(rent_price)|>
-    mutate(borough = county_name)|>
+    rename(borough = county_name)|>
     mutate(
     borough = 
       case_match(
@@ -328,11 +328,10 @@ zori_df =
     ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.
 
 ``` r
-#This code chunk creates a single datset with all the information contained in these files. 
+#This code chunk creates a single dataset with all the information contained in these files. 
 tidy_ny_df =
   left_join(zori_df, zipcodes_tidy_df)|>
-  arrange(zip_code, rent_price)|>
-  select(-county)
+  arrange(zip_code, rent_price)
 ```
 
     ## Joining with `by = join_by(zip_code, borough)`
@@ -361,7 +360,7 @@ zipcodes_tidy_df|>
 
 A tidy dataset was created by merging the zori and zipcode data sets by
 zip code. The dataset is arranged by ascending zip code and price. There
-are 10450 observations of 18 variables. There are 149 unique zip codes
+are 10450 observations of 15 variables. There are 149 unique zip codes
 included in the dataset.There are 43 unique neighborhoods. There are 171
 zip codes that appear in the ZIP code dataset but not in the zillow
 rental price dataset.
